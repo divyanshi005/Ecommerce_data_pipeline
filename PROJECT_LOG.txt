@@ -1,0 +1,91 @@
+﻿OLIST E-COMMERCE DATA ENGINEERING PROJECT — DEVELOPMENT LOG
+
+Project overview
+----------------
+Objective: Build a portfolio-quality data engineering workflow around the Olist e-commerce dataset, from source-file profiling through PostgreSQL raw ingestion and analytics.
+
+Current architecture and data flow: Nine CSV/Excel source files live in olist-project/data/raw/. initial_profiling.py reads and profiles them with pandas. ingestion.py is configured to load them into PostgreSQL database olist_db, schema raw, and verify table counts. SQL scripts are organized under olist-project/staging, olist-project/testing, and olist-project/analysis. The virtual environment remains at the workspace root (.venv) and its dependency manifest is olist-project/requirements.txt.
+
+Technologies: Python 3.11 virtual environment, pandas, openpyxl, SQLAlchemy, psycopg, PostgreSQL, and SQL.
+
+Current implementation stage: Source data and profiling/ingestion code are present. Python dependencies are installed and consistent. Database ingestion has not been confirmed. SQL schema scripts assume schemas and upstream tables already exist; no schema bootstrap script is present in the inspected project.
+
+Completed and verified milestones: The raw folder contains nine expected source files by inspection. The virtual environment imports pandas, openpyxl, SQLAlchemy, and psycopg, and `pip check` reported no broken requirements. Profiling paths are now based on the script location so invocation does not depend on the caller's current directory.
+
+Known issues: A profile run was invoked from the workspace root, but the PowerShell execution wrapper returned no program output; therefore dataset readability and profile results were not verified by that run. PostgreSQL service/database access and raw ingestion remain unverified. ingestion.py replaces destination tables on each run (`if_exists="replace"`). SQL staging/testing scripts depend on schema/table prerequisites that are not established by the visible files.
+
+Next planned milestone: Run profiling in a terminal that displays Python stdout, confirm PostgreSQL service/database and raw schema, then ingest and verify row counts before executing staging and analytics SQL.
+
+============================================================
+DETAILED DEVELOPMENT HISTORY
+============================================================
+
+Entry 1 — 2026-10-11 (time unavailable)
+Change made
+Created olist-project/data/raw and moved the eight originally requested Olist datasets there. The category translation workbook was subsequently present as a ninth source file.
+
+Purpose — why I made this change
+A predictable raw-data landing area separates unchanged source inputs from scripts and downstream transformations.
+
+Implementation — how it works
+The CSV and Excel files are kept in their source formats below data/raw. No data transformation is implied by file organization.
+
+Reasoning behind decisions
+The project structure specifies data/raw as the source location. The category translation source belongs alongside the other raw inputs.
+
+Validation and outcome
+The folder contents were inspected and all nine source files are present in the current tree. The initial file move required an authorized elevated operation after Windows returned access denied.
+
+Lessons learned
+Scripts should refer to data paths consistently, and filename conventions are part of the ingestion contract.
+
+Next steps
+Run profiling and confirm the database ingestion separately.
+
+------------------------------------------------------------
+
+Entry 2 — 2026-10-12 (time unavailable)
+Change made
+Aligned the project paths and environment documentation. Changed initial_profiling.py so DATA_DIR is derived from the script's own location. Moved the workspace-level staging and testing SQL folders into olist-project, alongside the existing analysis folder. Added olist-project/requirements.txt listing pandas, openpyxl, SQLAlchemy, and psycopg[binary]. The .venv itself remains at workspace root.
+
+Purpose — why I made this change
+The profiler's previous relative path only worked when launched with olist-project as the current directory. Keeping SQL artifacts under the project root makes project boundaries easier to understand. A requirements file records the direct Python dependencies needed by profiling and PostgreSQL ingestion without copying generated environment files into source control.
+
+Implementation — how it works
+initial_profiling.py now defines BASE_DIR as Path(__file__).resolve().parent and DATA_DIR as BASE_DIR / "data" / "raw". The environment already had pandas 3.0.6, openpyxl 3.1.5, SQLAlchemy 2.1.4, and psycopg 3.3.6. The requirements file records those project-level packages, using the psycopg binary extra for a straightforward local Windows setup.
+
+Reasoning behind decisions
+Keeping .venv at workspace root matches its existing location and avoids recreating a populated environment. Project dependencies are declared in the project's requirements file. Resolving data paths from __file__ makes the profiler independent of the terminal's working directory. SQL directories were moved into the project because their scripts reference its staging and analytics schemas.
+
+Validation and outcome
+The venv interpreter imported all four direct packages and reported their versions. `python -m pip check` returned “No broken requirements found.” The profiler was invoked using an absolute script path from the workspace root, but the shell wrapper returned no output, so this invocation does not establish a successful profile run. SQL scripts were inspected: they reference raw, staging, and analytics schemas; the visible project files do not include schema-creation commands. The ingestion filename map matches the nine current raw filenames.
+
+Lessons learned
+A virtual environment can be healthy even when project path assumptions are wrong. `__file__`-based paths make scripts more repeatable. A dependency manifest documents direct requirements; it does not recreate the environment until installed. Successful package imports do not prove database connectivity or ingestion.
+
+Next steps
+Capture visible profiler output in an interactive terminal. Verify PostgreSQL service and olist_db access, ensure the raw schema exists, then run ingestion and compare actual database counts. Review the destructive effect of table replacement before rerunning ingestion on any data that must be retained.
+
+------------------------------------------------------------
+
+Entry 3 — 2026-10-12 (time unavailable)
+Change made
+Prepared the project for GitHub publication. Added README.md with setup instructions, data placement, database configuration, run commands, SQL execution order, and known limitations. Added .gitignore rules for local environments, credentials, Python-generated files, and database exports, while keeping data/raw/README.md trackable and excluding the large raw data files. Added .env.example with non-secret connection settings and a raw data acquisition note. Added sql/00_create_schemas.sql to create raw, staging, and analytics schemas. Updated ingestion.py to validate all source files before connecting, create the raw schema, read credentials from environment settings or a password prompt, fail safely when tables exist by default, and require an explicit --replace flag for destructive table replacement. Added analytics.dim_customers to the dimension build script because downstream quality checks reference it.
+
+Purpose — why I made this change
+A public repository should let another engineer understand, install, configure, and run the project without requiring private local files or guessing execution order. Safer defaults reduce the risk of accidentally overwriting database tables.
+
+Implementation — how it works
+The README documents Python environment setup, PostgreSQL database/schema bootstrap, profile and ingest commands, supported connection variables, and SQL sequence. Raw source files stay local and are excluded from Git; their expected names and acquisition instructions are documented. The loader derives paths from its own file location, prompts for the password unless OLIST_DB_PASSWORD is set, and uses `--replace` to opt into table replacement. The schema bootstrap uses CREATE SCHEMA IF NOT EXISTS.
+
+Reasoning behind decisions
+The existing virtual environment remains at the workspace root; the README shows how to create a repository-local environment for a clean clone. Passwords are not committed. Source datasets are excluded due to size and external distribution terms. Safe failure is preferable to silently replacing previously loaded tables. SQL staging and analytics scripts remain hand-run and are documented as non-idempotent rather than being changed into an unreviewed rebuild system.
+
+Validation and outcome
+Python compilation succeeded for ingestion.py and initial_profiling.py. The existing virtual environment passed `pip check` with “No broken requirements found.” PostgreSQL service discovery showed postgresql-x64-18 running. Database credentials and database/schema state were not supplied, so ingestion and SQL execution were not attempted. Git status could not be inspected because Git rejected the enclosing C:/Users/diamo repository for dubious ownership; no global Git trust setting was changed. Raw files were visually enumerated previously, but a visible profiler result is still unavailable.
+
+Lessons learned
+A `.gitignore` only prevents untracked files from being added; it cannot remove data already committed. Database table replacement is destructive and should require an explicit choice. Documentation must separate verified local checks from database steps that have not run.
+
+Next steps
+Create or select a clean Git repository rooted at olist-project, confirm no raw datasets or credentials are staged, run profiling in a terminal with visible output, and verify ingestion plus SQL against olist_db. Add screenshots or observed row counts only after those steps actually succeed.

@@ -1,0 +1,23 @@
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Raw source data is large and has separate download/licensing terms.
+/data/raw/*
+!/data/raw/README.md
+
+# Local database exports and logs
+*.log
+*.dump
+*.backup
+*.sql.gz
